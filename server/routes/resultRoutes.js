@@ -83,14 +83,20 @@ router.get('/exam/:examId', async (req, res) => {
   }
 });
 
-// --- NEW SECURITY CHECK ADDED HERE ---
-// 3. GET: Check if an employee has already attempted this specific exam
-router.get('/check-attempt/:examId/:employeeCode', async (req, res) => {
+// --- UPDATED SECURITY CHECK ---
+// 3. POST: Securely check attempt to handle slashes, spaces, and case-insensitivity
+router.post('/check-attempt', async (req, res) => {
   try {
-    const { examId, employeeCode } = req.params;
+    const { examId, employeeCode } = req.body;
     
-    // Look for a result that matches BOTH the exam and the employee code
-    const existingResult = await Result.findOne({ examId, employeeCode });
+    // 1. Remove accidental spaces at the beginning or end
+    const cleanCode = employeeCode.trim();
+    
+    // 2. Search database (Case-Insensitive! "emp123" will match "EMP123")
+    const existingResult = await Result.findOne({ 
+      examId: examId, 
+      employeeCode: { $regex: new RegExp('^' + cleanCode + '$', 'i') } 
+    });
     
     // If we find one, it means they already submitted at least Level 1
     if (existingResult) {
@@ -100,6 +106,7 @@ router.get('/check-attempt/:examId/:employeeCode', async (req, res) => {
     // Otherwise, they are clear to start
     res.json({ attempted: false });
   } catch (error) {
+    console.error("Check attempt error:", error);
     res.status(500).json({ error: error.message });
   }
 });

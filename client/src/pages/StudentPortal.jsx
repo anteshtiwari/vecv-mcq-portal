@@ -32,7 +32,7 @@ function StudentPortal() {
     fetchActiveExam();
   }, []);
 
-  // --- THIS IS THE UPDATED FUNCTION ---
+  // --- UPDATED FUNCTION ---
   const handleStartExam = async (e) => {
     e.preventDefault();
     
@@ -42,13 +42,16 @@ function StudentPortal() {
     }
 
     try {
-      // 1. Check if this employee has already submitted this specific exam
-      const checkRes = await axios.get(`/api/results/check-attempt/${activeExam._id}/${candidate.employeeCode}`);
+      // 1. Secure POST request to check if employee has already submitted
+      const checkRes = await axios.post('/api/results/check-attempt', {
+        examId: activeExam._id,
+        employeeCode: candidate.employeeCode
+      });
       
       if (checkRes.data.attempted) {
-        // 2. Show the message you requested
+        // 2. Block entry and show message
         alert("You have already attempted the exam.");
-        return; // Stop them from proceeding
+        return; 
       }
 
       // 3. If not attempted, proceed to the exam
