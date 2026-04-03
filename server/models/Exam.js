@@ -7,10 +7,7 @@ const examSchema = new mongoose.Schema({
   endTime: { type: Date, required: true },
   
   // NEW: Admin sets this in minutes (e.g., 10 for 10 minutes per level)
-  durationL1: { type: Number, default: 10 },
-  durationL2: { type: Number, default: 10 },
-  durationL3: { type: Number, default: 10 },
-  durationL4: { type: Number, default: 10 },
+  durationPerLevel: { type: Number, default: 10 }, 
 
   isLevelBased: { type: Boolean, default: true },
   isActive: { type: Boolean, default: false }, 

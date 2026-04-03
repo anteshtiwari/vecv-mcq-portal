@@ -18,7 +18,7 @@ function StudentPortal() {
         
         // Logic fix: Check if data exists and has an ID
         if (res.data && res.data._id) {
-          setActiveExam(res.data); // Fixed the function name here!
+          setActiveExam(res.data); 
         } else {
           setActiveExam(null);
         }
@@ -32,21 +32,39 @@ function StudentPortal() {
     fetchActiveExam();
   }, []);
 
-  const handleStartExam = (e) => {
+  // --- THIS IS THE UPDATED FUNCTION ---
+  const handleStartExam = async (e) => {
     e.preventDefault();
+    
     if (!activeExam) {
       alert("No active exam found at this time. Please check the schedule.");
       return;
     }
-    // Passing the exam details to the ExamPage
-    navigate('/exam', { 
-      state: { 
-        fullName: candidate.fullName, 
-        employeeCode: candidate.employeeCode,
-        examId: activeExam._id 
-      } 
-    });
+
+    try {
+      // 1. Check if this employee has already submitted this specific exam
+      const checkRes = await axios.get(`/api/results/check-attempt/${activeExam._id}/${candidate.employeeCode}`);
+      
+      if (checkRes.data.attempted) {
+        // 2. Show the message you requested
+        alert("You have already attempted the exam.");
+        return; // Stop them from proceeding
+      }
+
+      // 3. If not attempted, proceed to the exam
+      navigate('/exam', { 
+        state: { 
+          fullName: candidate.fullName, 
+          employeeCode: candidate.employeeCode,
+          examId: activeExam._id 
+        } 
+      });
+    } catch (err) {
+      console.error("Error checking attempt status:", err);
+      alert("Error verifying candidate status. Please try again.");
+    }
   };
+  // ------------------------------------
 
   return (
     <div style={{ padding: '40px', maxWidth: '400px', margin: '50px auto', textAlign: 'center', fontFamily: 'sans-serif' }}>

@@ -4,7 +4,7 @@ const Result = require('../models/Result');
 const Question = require('../models/Question');
 const Exam = require('../models/Exam');
 
-// 1. POST: Grade a submitted level and update status/timestamps/answers
+// 1. POST: Grade a submitted level (KEEP YOUR EXISTING CODE)
 router.post('/submit-level', async (req, res) => {
   try {
     const { fullName, employeeCode, examId, level, userAnswers } = req.body;
@@ -43,27 +43,18 @@ router.post('/submit-level', async (req, res) => {
       });
     }
 
-    // --- SECTION E: THE FIX FOR DUPLICATE SECTIONS ---
-    // Instead of just pushing, we first filter out any existing entry for this specific level.
-    // This ensures that if L1 is submitted again, the old L1 is replaced by the new L1.
     result.scoreCard = result.scoreCard.filter(s => s.level !== level);
-
     result.scoreCard.push({
       level: level,
       score: levelScore,
       passed: passed,
       answers: userAnswers 
     });
-    // ------------------------------------------------
 
-    // F. Update global tracking stats
-    // Note: We recalculate totalScore based on the filtered scorecard to keep it accurate
     result.totalScore = result.scoreCard.reduce((sum, item) => sum + item.score, 0);
-    
     result.highestLevelAttempted = level;
     result.completedAt = new Date();
     
-    // G. Status logic
     if (passed) {
       if (level === 'L4') {
         result.status = 'Fully Completed & Passed';
@@ -75,24 +66,39 @@ router.post('/submit-level', async (req, res) => {
     }
     
     await result.save();
-
-    res.json({ 
-      passed, 
-      score: levelScore, 
-      required: passingMarks,
-      status: result.status 
-    });
+    res.json({ passed, score: levelScore, required: passingMarks, status: result.status });
 
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// 2. GET: Fetch all results
+// 2. GET: Fetch all results for Admin
 router.get('/exam/:examId', async (req, res) => {
   try {
     const results = await Result.find({ examId: req.params.examId }).sort({ completedAt: -1 });
     res.json(results);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- NEW SECURITY CHECK ADDED HERE ---
+// 3. GET: Check if an employee has already attempted this specific exam
+router.get('/check-attempt/:examId/:employeeCode', async (req, res) => {
+  try {
+    const { examId, employeeCode } = req.params;
+    
+    // Look for a result that matches BOTH the exam and the employee code
+    const existingResult = await Result.findOne({ examId, employeeCode });
+    
+    // If we find one, it means they already submitted at least Level 1
+    if (existingResult) {
+      return res.json({ attempted: true });
+    }
+    
+    // Otherwise, they are clear to start
+    res.json({ attempted: false });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
