@@ -9,16 +9,19 @@ function StudentPortal() {
 
   // Check for active exams as soon as the page loads
   useEffect(() => {
-    const checkActiveExam = async () => {
-      try {
-        const res = await axios.get('http://localhost:5000/api/exams/active');
-        setActiveExam(res.data);
-      } catch (err) {
-        setActiveExam(null); // No exam found or error
+  const fetchActiveExam = async () => {
+    try {
+      // Use axios.get('/api/exams/active') - keep the /api part if your backend has it!
+      const res = await axios.get('/api/exams/active'); 
+      if (res.data) {
+        setExam(res.data);
       }
-    };
-    checkActiveExam();
-  }, []);
+    } catch (err) {
+      console.error("Fetch error:", err);
+    }
+  };
+  fetchActiveExam();
+}, []);
 
   const handleStartExam = (e) => {
     e.preventDefault();
